@@ -1,0 +1,5 @@
+exportPattern("^[[:alpha:]]+")
+importFrom("graphics", plot, lines, legend, par, layout, image, contour, plot.new, title)
+S3method("print", "selection")
+S3method("print", "qselection")
+S3method("plot", "qselection")
