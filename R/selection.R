@@ -1,8 +1,16 @@
 selection <-
 function(x,y,q,criterion="deviance",method="lm",family="gaussian",seconds=FALSE,nmodels=1){
+	
+	if(missing(x)){stop("Argument \"x\" is missing, with no default")}
+ 	if(missing(y)){stop("Argument \"y\" is missing, with no default")}
+ 	if(missing(q)){stop("Argument \"q\" is missing, with no default")}
+
 	nvar<-ncol(x)	
 	inside<-integer(q)
 	n=length(y)
+	#if(q==nvar) {
+     #   stop("The size of subset \"q\" is the same that the number of covariates")
+   # }
 	
 	if(method=="lm"){model<-lm(y~NULL)} 
 	if(method=="glm"&family=="binomial"){model<-glm(y~NULL,family="binomial")}
@@ -26,7 +34,7 @@ function(x,y,q,criterion="deviance",method="lm",family="gaussian",seconds=FALSE,
 		bestaic=AIC(model)	}	
 	stop<-integer(q)
 	end=1
-	if (q == 1) {end=0} 
+	if (q == 1 |q==nvar ) {end=0} 
 	cont=0
 	while (end != 0){ 
 		for (f in 1:q){
@@ -60,20 +68,24 @@ function(x,y,q,criterion="deviance",method="lm",family="gaussian",seconds=FALSE,
 	
 	if(method=="lm"){
 		formula=model$call$formula
-		Mtrainning=lm(formula,weights=Wtrainning) }
+		Mtrainning=lm(formula,weights=Wtrainning)
+		pred=predict(lm(formula),type="response") }
 		
 	if(method=="glm"&family=="binomial"){
 		formula=model$call$formula
-		Mtrainning=glm(formula,family="binomial",weights=Wtrainning) }
+		Mtrainning=glm(formula,family="binomial",weights=Wtrainning)
+		pred=predict(glm(formula,family="binomial"),type="response")}
 	
 	if(method=="glm"&family=="poisson"){
 		formula=model$call$formula
-		Mtrainning=glm(formula,family="poisson",weights=Wtrainning) }
+		Mtrainning=glm(formula,family="poisson",weights=Wtrainning)
+		pred= predict(glm(formula,family="poisson"),type="response")}
 		
 	if(method=="gam"){
 		formula=model$call$formula
 		#formula=model$Best_model$formula
-		Mtrainning=gam(formula,weights=Wtrainning) }
+		Mtrainning=gam(formula,weights=Wtrainning)
+		pred= predict(gam(formula),type="response")}
 		
 	muhat=predict(Mtrainning,type="response")
 	
@@ -118,7 +130,8 @@ function(x,y,q,criterion="deviance",method="lm",family="gaussian",seconds=FALSE,
 		ic=criterion,
 		seconds=seconds,
 		nmodels=nmodels,
-		call=match.call())}
+		Prediction=pred)}
+		#call=match.call())		}
 		
 	if (criterion=="R2") {res<-list(Best_model=model,
 		Variable_names=names1,
@@ -127,7 +140,8 @@ function(x,y,q,criterion="deviance",method="lm",family="gaussian",seconds=FALSE,
 		ic=criterion,
 		seconds=seconds,
 		nmodels=nmodels,
-		call=match.call())}
+		Prediction=pred)}
+		#call=match.call())		}
 		
 	if (criterion=="variance") {res<-list(Best_model=model,
 		Variable_names=names1,
@@ -136,7 +150,10 @@ function(x,y,q,criterion="deviance",method="lm",family="gaussian",seconds=FALSE,
 		ic=criterion,
 		seconds=seconds,
 		nmodels=nmodels,
-		call=match.call())}
+		Prediction=pred)}
+		#call=match.call())		}
+		
+		
 
 if (seconds==TRUE){
 	bestaic1=bestaic
@@ -205,7 +222,7 @@ if (seconds==TRUE){
 	
 	if(method=="glm"&family=="poisson"){
 		formula=model$formula
-		Mtrainning=glm(formula,family="poisson",weights=Wtrainning) }
+		Mtrainning=glm(formula,family="poisson",weights=Wtrainning)}
 		
 	if(method=="gam"){
 		formula=model$formula
@@ -245,7 +262,6 @@ if (seconds==TRUE){
 
 	
 	
-	
 	if (criterion=="deviance"){res2<-list(Alternative_model=model,
 		Variable_names=names2,
 		Variable_numbers=inside,
@@ -272,3 +288,4 @@ class(res) <- "selection"
 return(res)
 
 }
+

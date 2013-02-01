@@ -1,0 +1,4 @@
+This file documents software changes since the previous edition.
+
+
+- test function has been reprogrammed to speed up computation.

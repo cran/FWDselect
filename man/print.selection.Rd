@@ -45,11 +45,11 @@ Marta Sestelo, Nora M. Villanueva and Javier Roca-Pardinas.}
 }
 \examples{
 library(FWDselect)
-data(emissionS02)
-
-obj1=selection(x=emissionS02[,-19],y=emissionS02[,19],q=1,method="lm",criterion="R2")
+data(pollution)
+x=pollution[,-19]
+y=pollution[,19]
+obj1=selection(x,y,q=1,method="lm",criterion="R2")
 obj1
-
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.
