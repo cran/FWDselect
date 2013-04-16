@@ -1,77 +1,78 @@
 test <-
-function(x,y,method="lm",family="gaussian",nboot=50,max.r=5, fix.r=TRUE){
+function(x,y,method="lm",family="gaussian",nboot=50,speedup=TRUE,unique=FALSE,num.h0=1){
 
-# Funcion que calcula el estadistico T	
+# Statistics T	
 #########################################
-Tvalue=function(xy,ph0T=ph0,ph1T=ph1,optionT=method,fix.ph1T=fix.r,rT=max.r){
+pred=c()
+Tvalue=function(xy,qT=qh0,optionT=method,speed=speedup){
 	x=xy[,2:ncol(xy)]
 	y=xy[,1]
 	var_res=NULL
 	nvar=ncol(x)
 	x=as.data.frame(x)
-	if(fix.ph1T==FALSE){
-	for (p in (ph0T+1):rT){
-		var_res[p]=selection(x,y,q=p,method=optionT,family=family,seconds=FALSE,criterion="variance")$Information_Criterion }
-	ph1<<-which.min(var_res) 
-	varh1=var_res[ph1]
-	#print(c(varh1,"varh1"))
-	 }else{   
-		varh1=selection(x,y,q=ph1,method=optionT,family=family,criterion="variance")$Information_Criterion
-		}
+		aux=selection(x,y,q=qT,method=optionT,family=family,seconds=FALSE,criterion="deviance")
+		pred<<-aux$Prediction
+		sel_num=aux$Variable_number
+		res=y-pred
+		if(speed==TRUE){
+		xno=x[,-sel_num]
+		var_imp=selection(xno,y,q=1,method=optionT,family=family,seconds=FALSE,criterion="deviance")$Variable_number
+		xres=x[,c(var_imp)]}else{xres=x[,-sel_num]}
+		data_res=cbind(res,xres)
+		data_res=as.data.frame(data_res)
 
-	varh0=selection(x=x,y=y,q=ph0T,method=optionT,family=family,seconds=FALSE,criterion="variance")$Information_Criterion
-	T=varh0/varh1 
+		if(optionT=="lm"){
+			pred1=lm(res~.,data=data_res) }
+		if(optionT=="glm"){
+			pred1=glm(res~.,data=data_res,family=family) }
+		if(optionT=="gam"){
+			xnam <- paste("s(x[,", 1:(length(data_res)-1),"])",sep="")
+			fmla <- as.formula(paste("res ~ ", paste(xnam, collapse= "+")))
+			pred1=gam(fmla,family=family) }
+			
+		pred1=predict(pred1,type="response")
+		T=sum(abs(pred1))						
 	#print(T)
 	}
 ##############################################
 
-ph1=NULL
-nvar=ncol(x)
-n=length(y)
-	
-print("Processing IC bootstrap for H_0 ( 1 )...")
+nvar=ncol(x);n=length(y)
+xydata=cbind(y,x);pvalue=c()
+Decision=c();Hypothesis=c();T=c()
+ii=1
+if(unique==FALSE){bucle=c(1:(nvar-1))}else{bucle=num.h0}
+for (qh0 in bucle){
+	print(paste("Processing IC bootstrap for H_0 (",qh0,")..."),sep="")		
+	T[ii]=Tvalue(xy=xydata,qT=qh0)
+	muhatg=pred 
+	errg=y-muhatg
+	err1=errg*(1-sqrt(5))/2;err2=errg*(1+sqrt(5))/2
 
-xydata=cbind(y,x)
-T=c()
-Q05=c()
-Decision=c()
-Hypothesis=c()
-Tboot=numeric(nboot)
-stopp=FALSE
+	#Bootstrap
+	yboot=array(data=NA,dim=c(n,nvar+1,nboot))
+	for (iboot in 1:nboot) {
+	yaux=rbinom(n, 1, prob=(5+sqrt(5))/10)
+	yb=muhatg+(err1*yaux+err2*(1-yaux))
+	aux=cbind(yb,xydata[,-1])
+	aux=as.matrix(aux)
+	dim(aux)=NULL
+	yboot[,,iboot]=aux}
 
-for (ph0 in 1:(nvar-1)){	
-if(ph0==1){T[ph0]=Tvalue(xy=xydata,ph0T=ph0,fix.ph1T=FALSE)}else{T[ph0]=Tvalue(xy=xydata,ph0T=ph0)}
-if(ph0!=1) print(paste("Processing IC bootstrap for H_0 (",ph0,")..."),sep="")
-	if(T[ph0]>1){
-#bootstrap
-	iboot=nboot
-	yboot=array(data=NA,dim=c(n,nvar+1,iboot)) 
-	for (icol in 1:iboot) { 
-		aux=as.matrix(xydata[sample(n,n),])
-		dim(aux)=NULL
-		yboot[,,icol]=aux }
 	Tboot=apply(yboot,3,Tvalue) 
-	Q05[ph0]=quantile(Tboot,0.05)
-	if(Q05[ph0]<=1){Decision[ph0]="Accepted"}else{Decision[ph0]="Rejected"}
-	Hypothesis[ph0]=paste("H_0 (",ph0,")",sep="")
-	Q05[ph0]=round(Q05[ph0],2)
-	T[ph0]=round(T[ph0],2)
-	
-	if(Q05[ph0]<=1){break} }else{
-		Decision[ph0]= "-" 
-		Q05[ph0]="-"
-		T[ph0]="-"
-		Hypothesis[ph0]=paste("H_0 (",ph0,")",sep="")
-		stopp=TRUE
-		break}
-	
-} 
+	pvalue[ii]=sum(Tboot>=T[ii])/nboot
 
+	if(pvalue[ii]>=0.05){Decision[ii]="Accepted"}else{Decision[ii]="Rejected"}
+	Hypothesis[ii]=paste("H_0 (",qh0,")",sep="")
+	T[ii]=round(T[ii],2)
+	ii=ii+1
+	if(Decision[ii-1]=="Accepted"){break}	}
+
+m=cbind(Hypothesis=Hypothesis,Statistic=T,pvalue=pvalue,Decision=Decision)
 cat("\n*************************************\n")
-m=cbind(Hypothesis=Hypothesis,Statistic=T,Q05=Q05,Decision=Decision)
-if(stopp==TRUE){cat(paste("\n Note: q =",ph0,"is the subset size with smallest variance\n",sep=" "))
-	cat("\n*************************************\n")}
-
 return(as.data.frame(m))
 
 }
+
+
+
+

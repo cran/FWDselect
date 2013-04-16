@@ -1,15 +1,17 @@
-\name{episodeS02}
-\alias{episodeS02}
+\name{episode}
+\alias{episode}
 \docType{data}
 \title{
-Episode of SO2. Pollution incident. 
+Episode of SO2. Pollution incident 
 }
 \description{
 Registered values of SO2 in different temporal instant. Each column of the dataset corresponds with the value obtained by the series of bi-hourly means for SO2 in the instant \code{t} (5-min temporal instant). The values of this dataset are greater than the maximum value permitted for SO2 atmospheric. 
 }
-\usage{data(episodeS02)}
+\usage{data(episode)
+}
 \format{
- \code{episodeS02} is a data frame with 19 variables (columns). }
+ \code{episode} is a data frame with 19 variables (columns).
+}
 %\details{
 %%  ~~ If necessary, more details than the __description__ above ~~
 %}
@@ -20,6 +22,7 @@ Registered values of SO2 in different temporal instant. Each column of the datas
 %%  ~~ possibly secondary sources and usages ~~
 %}
 \examples{
-data(episodeS02)
-head(episodeS02)}
+data(episode)
+head(episode)
+}
 

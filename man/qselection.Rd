@@ -8,7 +8,8 @@ Selecting variables for several subset sizes
 Function that enables to obtain the best variables for more than one size of subset. Returns a table with the chosen covariates to be introduced into the models and their information criteria. 
 }
 \usage{
-qselection(x, y, qvector, criterion = "deviance", method = "lm", family = "gaussian")
+qselection(x, y, qvector, criterion = "deviance", method = "lm", 
+family = "gaussian")
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -17,13 +18,13 @@ A data frame containing all the covariates.
 }
   \item{y}{
 A vector with the response values.}
-  \item{qvector}{ A vector with the subset size.
+  \item{qvector}{ A vector with more than one variable-subset size to be selected.
 }
-  \item{criterion}{ The information criterion to be used. Default is the deviance. Other provided functions are the coefficient of determination ("\code{R2}") or the residual variance ("\code{variance}").
+   \item{criterion}{The cross-validation-based information criterion to be used. Default is the deviance. Other functions provided are the coefficient of determination ("\code{R2}") and residual variance ("\code{variance}").  
 }
-  \item{method}{A character string specifying which regression method is used: linear models ("\code{lm}"), generalized additive models ("\code{glm}") or generalized additive models ("\code{gam}").
+ \item{method}{A character string specifying which regression method is used, i.e., linear models ("\code{lm}"), generalized additive models ("\code{glm}") or generalized additive models ("\code{gam}").
 }
-  \item{family}{A description of the error distribution and link function to be used in the model: "\code{gaussian}", "\code{binomial}" or "\code{poisson}".
+  \item{family}{This is a family object specifying the distribution and link to use in fitting: "\code{gaussian}", "\code{binomial}" or "\code{poisson}".
 }
 }
 %\details{
@@ -43,9 +44,7 @@ Marta Sestelo, Nora M. Villanueva and Javier Roca-Pardinas.
 %\note{
 %%  ~~further notes~~
 %}
-
 %% ~Make other sections like Warning with \section{Warning }{....} ~
-
 \seealso{
 \code{\link{selection}}
 
@@ -53,9 +52,10 @@ Marta Sestelo, Nora M. Villanueva and Javier Roca-Pardinas.
 }
 \examples{
 library(FWDselect)
-data(emissionS02)
-
-obj2=qselection(x=emissionS02[,-19],y=emissionS02[,19],qvector=c(1:4),method="lm",
+data(pollution)
+x=pollution[,-19]
+y=pollution[,19]
+obj2=qselection(x,y,qvector=c(1:4),method="lm",
 criterion="R2")
 obj2
 }
