@@ -1,7 +1,7 @@
 Package: FWDselect
 Title: Selecting Variables in Regression Models
-Version: 2.0
-Date: 2015-05-15
+Version: 2.0.1
+Date: 2015-10-08
 Author: Marta Sestelo [aut, cre],
   Nora M. Villanueva [aut],
   Javier Roca-Pardinas [aut]
@@ -19,8 +19,8 @@ BugReports: http://github.com/sestelo/fwdselect/issues
 Depends: R (>= 3.1.0)
 License: MIT + file LICENSE
 LazyData: true
-Imports: cvTools, mgcv, parallel
+Imports: cvTools, mgcv, parallel, graphics, stats
 NeedsCompilation: no
-Packaged: 2015-05-16 12:11:38 UTC; Sestelo
+Packaged: 2015-10-08 17:35:44 UTC; Sestelo
 Repository: CRAN
-Date/Publication: 2015-05-17 09:52:36
+Date/Publication: 2015-10-12 00:25:28

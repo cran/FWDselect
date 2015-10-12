@@ -14,12 +14,13 @@
 #' is  computationally efficient since it considers one more variable to fit
 #' the alternative model than the number of variables used to fit the null.
 #' If \code{FALSE}, the fit of the alternative model is based on considering
-#' the best subset of variables of size greater than $q$, the one that minimizes an
+#' the best subset of variables of size greater than \code{q}, the one that minimizes an
 #' information criterion. The size of this subset must be given by the user
 #' filling the argument \code{qmin}.
 #' @param qmin By default \code{NULL}. If \code{speedup} is \code{FALSE},
-#' \code{qmin} is the integer number which corresponds with the size of
-#' the best subset of variables.
+#' \code{qmin} is an integer number selected by the user. To help you select
+#' this argument, it is recommended to visualize the graphical output of the
+#' \code{plot} function and choose the number \code{q} which minimizes the curve.
 #'@param unique A logical value. By default \code{FALSE}. If  \code{TRUE},
 #' the test is performed only for one null hypothesis, given by the argument  \code{q}.
 #'@param q By default \code{NULL}. If  \code{unique} is \code{TRUE}, \code{q}
@@ -59,10 +60,23 @@
 #' y = diabetes[ ,1]
 #' test(x, y, method = "lm", cluster = FALSE, nboot = 5)
 #'
+#' # for speedup = FALSE
+#' obj2 = qselection(x, y, qvector = c(1:9), method = "lm",
+#'  cluster = FALSE)
+#' plot(obj2) # we choose q = 7 for the argument qmin
+#' test(x, y, method = "lm", cluster = FALSE, nboot = 5,
+#' speedup = FALSE, qmin = 7)
+#'
 #'@importFrom parallel detectCores
 #'@importFrom parallel clusterExport
 #'@importFrom parallel parCapply
 #'@importFrom parallel stopCluster
+#'@importFrom stats as.formula
+#'@importFrom stats lm
+#'@importFrom stats glm
+#'@importFrom stats predict
+#'@importFrom stats rbinom
+#'@importFrom stats rpois
 #'@export
 
 test <- function(x, y, method = "lm", family = "gaussian", nboot = 50,
@@ -82,6 +96,7 @@ test <- function(x, y, method = "lm", family = "gaussian", nboot = 50,
     # if (!exists("pred")) {pred <<- aux$Prediction}
     pred <- aux$Prediction
     sel_num <- aux$Variable_number
+
     #res = y - pred
     res = aux$Best_model$residuals
     if (speed == TRUE & qT!=(nvar-1)) {
@@ -93,12 +108,12 @@ test <- function(x, y, method = "lm", family = "gaussian", nboot = 50,
       }else if (speed == TRUE & qT == (nvar-1)){
        xres = x[, -sel_num]
       } else {
-            xno = x[, -sel_num]
-           realqmin <- qmin-qT
+          xno = x[, -sel_num]
+          realqmin <- qmin-qT
           var_imp = selection(xno, res, q = realqmin, method = optionT,
                              family = "gaussian", seconds = FALSE,
                             criterion = "deviance", cluster = FALSE)$Variable_number
-        xres = xno[, c(var_imp)]
+          xres = xno[, c(var_imp)]
         }
     data_res = cbind(res, xres)
 
@@ -132,6 +147,7 @@ test <- function(x, y, method = "lm", family = "gaussian", nboot = 50,
 
     pred1 <- predict(pred1, type = "response")
     T = sum(abs(pred1))
+   # print(T)
     return(list(T = T, pred = pred, sel_num = sel_num))
   }
 
@@ -198,7 +214,10 @@ test <- function(x, y, method = "lm", family = "gaussian", nboot = 50,
     T[ii] <- res$T
     sel_numg<- res$sel_num # lo saco de la funcion Tvalue bajo H_0
     muhatg <- res$pred  #lo saco de la funcion Tvalue bajo H_0
-    muhatg[muhatg < 0] <- 0
+
+
+
+    if(family != "gaussian") muhatg[muhatg < 0] <- 0  #VER ESTO!!!!
 
 
     # Bootstrap
@@ -215,6 +234,7 @@ test <- function(x, y, method = "lm", family = "gaussian", nboot = 50,
         yaux <- rbinom(n, 1, prob = (5 + sqrt(5))/10)
         return(muhatg + (err1 * yaux + err2 * (1 - yaux)))
       }
+
       yb <- replicate(nboot,funreplicate())
     }
 
@@ -242,17 +262,17 @@ test <- function(x, y, method = "lm", family = "gaussian", nboot = 50,
       Tboot <- apply(yb,2,funapply)
     }
 
-    pvalue[ii] = sum(Tboot >= T[ii])/nboot
+    pvalue[ii] = sum(Tboot > T[ii])/nboot
 
     if (pvalue[ii] >= 0.05) {
-      Decision[ii] = "Accepted"
+      Decision[ii] = "Not Rejected"
     } else {
       Decision[ii] = "Rejected"
     }
     Hypothesis[ii] = paste("H_0 (", qh0, ")", sep = "")
     T[ii] = round(T[ii], 2)
     ii = ii + 1
-    if (Decision[ii - 1] == "Accepted") {break}
+    if (Decision[ii - 1] == "Not Rejected") {break}
   }
 
   m = cbind(Hypothesis = Hypothesis, Statistic = T, pvalue = pvalue, Decision = Decision)

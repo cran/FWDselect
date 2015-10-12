@@ -23,7 +23,13 @@
 #'@param nmodels Number of secondary models to be returned.
 #'@param nfolds Number of folds for the cross-validation procedure.
 #'@param cluster A logical value. If  \code{TRUE} (default), the
-#'  procedure is  parallelized.
+#'  procedure is  parallelized. Note that there are cases without enough
+#'  repetitions (e.g., a low number of initial variables) that R will gain in
+#'  performance through serial computation. R takes time to distribute tasks
+#'  across the processors also it will need time for binding them all together
+#'  later on. Therefore, if the time for distributing and gathering pieces
+#'  together is greater than the time need for single-thread computing, it does
+#'  not worth parallelize.
 #'@param ncores An integer value specifying the number of cores to be used
 #' in the parallelized procedure. If \code{NULL} (default), the number of cores to be used
 #' is equal to the number of cores of the machine - 1.
@@ -61,7 +67,13 @@
 #'@importFrom parallel makeCluster
 #'@importFrom parallel parLapply
 #'@importFrom parallel stopCluster
-#'@importFrom cvTools cvFolds
+#'@importFrom stats as.formula
+#'@importFrom stats deviance
+#'@importFrom stats lm
+#'@importFrom stats glm
+#'@importFrom stats predict
+#'@importFrom stats update
+#'@importFrom stats var
 #'@export
 
 
@@ -328,9 +340,10 @@ selection <- function(x, y, q, prevar = NULL, criterion = "deviance",
       if (family == "binomial") {y = as.numeric(as.character(y))}
 
 
+
       if (criterion == "deviance") {
         if (family == "gaussian"){
-          dev_cv = sum((y_test - muhat_test)^2)
+          dev_cv = sum((y_test - muhat_test)^2, na.rm = TRUE)
         }
         if (family == "binomial") {
           ii = muhat_test < 1e-04
@@ -339,7 +352,7 @@ selection <- function(x, y, q, prevar = NULL, criterion = "deviance",
           muhat_test[ii] = 0.9999
           entrop = rep(0, length(test))
           ii = (1 - y_test) * y_test > 0
-          if (sum(ii) > 0) {
+          if (sum(ii, na.rm = TRUE) > 0) {
             entrop[ii] = 2 * (y_test[ii] * log(y_test[ii])) +
               ((1 - y_test[ii]) * log(1 - y_test[ii]))
           } else {
@@ -347,7 +360,7 @@ selection <- function(x, y, q, prevar = NULL, criterion = "deviance",
           }
           entadd = 2 * y_test * log(muhat_test) +
             (1 - y_test) * log(1 - muhat_test)
-          dev_cv = sum(entrop - entadd)
+          dev_cv = sum(entrop - entadd, na.rm = TRUE)
         }
         if (family == "poisson") {
           tempf = muhat_test
@@ -356,13 +369,13 @@ selection <- function(x, y, q, prevar = NULL, criterion = "deviance",
           dev_cv = 2 * (-y_test * log(tempf) - (y_test - muhat_test))
           ii = y_test > 0
           dev_cv[ii] = dev_cv[ii] + (2 * y_test[ii] * log(y_test[ii]))
-          dev_cv = sum(dev_cv)
+          dev_cv = sum(dev_cv, na.rm = TRUE)
         }
       } else if (criterion == "R2") {
-        var_res = sum((y[test] - muhat[test])^2)/length(test)
+        var_res = sum((y[test] - muhat[test])^2, na.rm = TRUE)/length(test)
         r2cv = 1 - (var_res/(var(y[test]) * (length(test) - 1)/length(test)))
       }else{
-        var_res = sum((y[test] - muhat[test])^2)/length(test)
+        var_res = sum((y[test] - muhat[test])^2, na.rm = TRUE)/length(test)
       }
       if (criterion == "deviance") {
         return(dev_cv)
@@ -373,7 +386,7 @@ selection <- function(x, y, q, prevar = NULL, criterion = "deviance",
       }
     }
 
-    aux <- cvFolds(n, K = nfolds, type = "consecutive")
+    aux <- cvTools::cvFolds(n, K = nfolds, type = "consecutive")
     if (cluster == TRUE){
       cv_ics <- parLapply(cl = cl, 1:nfolds, eachfold)
     }else{
