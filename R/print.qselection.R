@@ -5,7 +5,8 @@
 #' @param \ldots Other options.
 #' @return The function returns a summary table with the subsets of size
 #'   \eqn{q}, their information criterion values and the chosen variables for
-#'   each one.
+#'   each one. Additionally, an asterisk is shown next to the size of subset
+#'   which minimizes the information criterion.
 #' @author Marta Sestelo, Nora M. Villanueva and Javier Roca-Pardinas.
 #' @seealso \code{\link{selection}}.
 #' @examples
@@ -24,7 +25,12 @@ print.qselection <- function(x = object, ...) {
     aux = cbind(object[[1]], object[[2]], as.character(object[[3]]))
     colnames(aux) = names(object)
     aux2 = as.data.frame(aux)
-    print(aux2)
+    ii <- which.min(object[[2]])
+    best <- rep("", length(object[[1]]))
+    best[ii] <- "*"
+    res <- cbind(aux2,best)
+    colnames(res) <- c(names(object), "")
+    print(res)
   }else{
     stop("Argument x must be either qselection object.")
   }
