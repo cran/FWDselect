@@ -35,3 +35,8 @@ This file documents software changes since the previous edition.
 
   * test function returns now an additional argument ($nvar) which indicates the number of variables that have to be included in teh final model.
 
+
+
+# FWDselect 2.1.1 (2026-04-17)
+
+  * nfolds argument corrected in qselection function.
